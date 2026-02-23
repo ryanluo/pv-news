@@ -136,9 +136,11 @@ async function pollReddit() {
 
   // 1. Primary subreddit: fetch /new directly (no search lag)
   try {
-    const url = `https://www.reddit.com/r/${REDDIT_PRIMARY_SUB}/new.json?limit=25`;
+    const url = `https://old.reddit.com/r/${REDDIT_PRIMARY_SUB}/new.json?limit=25`;
     const res = await fetch(url, { headers: fetchHeaders });
-    if (res.ok) {
+    if (!res.ok) {
+      console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/new returned ${res.status}`);
+    } else {
       const data = await res.json();
       for (const child of data?.data?.children ?? []) {
         const d = child.data;
@@ -165,7 +167,7 @@ async function pollReddit() {
   // 2. Other subreddits: search for "puerto vallarta"
   const searchSubs = REDDIT_SUBREDDITS.filter((s) => s !== REDDIT_PRIMARY_SUB);
   for (const subreddit of searchSubs) {
-    const url = `https://www.reddit.com/r/${subreddit}/search.json?q=puerto+vallarta&sort=new&restrict_sr=on&limit=25`;
+    const url = `https://old.reddit.com/r/${subreddit}/search.json?q=puerto+vallarta&sort=new&restrict_sr=on&limit=25`;
     try {
       const res = await fetch(url, { headers: fetchHeaders });
       if (!res.ok) {
@@ -203,7 +205,7 @@ async function pollReddit() {
 
 async function pollSubredditComments() {
   // r/subreddit/comments.json returns the latest comments across ALL posts in the sub
-  const url = `https://www.reddit.com/r/${REDDIT_PRIMARY_SUB}/comments.json?limit=100`;
+  const url = `https://old.reddit.com/r/${REDDIT_PRIMARY_SUB}/comments.json?limit=100`;
   let inserted = 0;
 
   try {
