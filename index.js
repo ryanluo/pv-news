@@ -112,7 +112,7 @@ const REDDIT_PRIMARY_SUB = "puertovallarta"; // direct polling (no search), also
 // ─── SQLite Setup ───────────────────────────────────────────────────────────
 
 const db = new Database(process.env.DB_PATH || "pv-news.db");
-db.pragma("journal_mode = WAL");
+db.pragma("journal_mode = DELETE");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
