@@ -1,0 +1,20 @@
+{
+  "name": "pv-news",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Puerto Vallarta news aggregator - polls Reddit and X for PV-related posts",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
