@@ -41,21 +41,23 @@ app.get("/login", (_req, res) => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PV News - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    form { background: #1e293b; padding: 2rem; border-radius: 8px; width: 320px; }
-    h1 { color: #38bdf8; margin-bottom: 1.5rem; font-size: 1.25rem; text-align: center; }
-    label { display: block; font-size: .85rem; color: #94a3b8; margin-bottom: .25rem; }
-    input { width: 100%; padding: .5rem; border: 1px solid #334155; border-radius: 4px; background: #0f172a; color: #e2e8f0; font-size: 1rem; margin-bottom: 1rem; }
-    button { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: .6rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 1rem; }
-    button:hover { background: #7dd3fc; }
-    .error { color: #f87171; font-size: .85rem; text-align: center; margin-bottom: 1rem; }
+    body { font-family: 'Baloo 2', system-ui, sans-serif; background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%); color: #4a1942; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    form { background: #fff0f5; padding: 2rem; border-radius: 20px; width: 340px; box-shadow: 0 8px 30px rgba(233, 30, 99, 0.15); border: 2px solid #f8bbd0; }
+    h1 { color: #e91e63; margin-bottom: 1.5rem; font-size: 1.5rem; text-align: center; letter-spacing: 1px; }
+    label { display: block; font-size: .9rem; color: #ad1457; margin-bottom: .25rem; font-weight: 500; }
+    input { width: 100%; padding: .6rem; border: 2px solid #f8bbd0; border-radius: 12px; background: #fff; color: #4a1942; font-size: 1rem; margin-bottom: 1rem; font-family: inherit; }
+    input:focus { outline: none; border-color: #e91e63; box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.15); }
+    button { width: 100%; background: linear-gradient(135deg, #ec407a, #e91e63); color: #fff; border: none; padding: .7rem; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 1rem; font-family: inherit; transition: transform 0.1s; }
+    button:hover { transform: scale(1.03); background: linear-gradient(135deg, #f06292, #ec407a); }
+    .error { color: #c62828; font-size: .85rem; text-align: center; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
   <form method="POST" action="/login">
-    <h1>PV News</h1>
+    <h1>PV News ~</h1>
     ${`<p class="error" id="err"></p>`}
     <label for="password">Password</label>
     <input type="password" name="password" id="password" autofocus required>
@@ -331,31 +333,35 @@ app.get("/", (_req, res) => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PV News</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 1rem; max-width: 960px; margin: 0 auto; }
-    h1 { margin-bottom: .5rem; color: #38bdf8; }
-    .meta { color: #94a3b8; font-size: .85rem; margin-bottom: 1.5rem; }
-    button { background: #38bdf8; color: #0f172a; border: none; padding: .5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
-    button:hover { background: #7dd3fc; }
-    .card { background: #1e293b; border-radius: 6px; padding: .75rem 1rem; margin-bottom: .5rem; display: flex; gap: .75rem; align-items: flex-start; }
-    .badge { font-size: .7rem; font-weight: 700; padding: .15rem .4rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: .1rem; }
-    .badge.reddit { background: #ff4500; color: #fff; }
-    .badge.reddit_comment { background: #ff6634; color: #fff; }
-    .badge.x { background: #1d9bf0; color: #fff; }
+    body { font-family: 'Baloo 2', system-ui, sans-serif; background: linear-gradient(180deg, #fce4ec 0%, #fff0f5 100%); color: #4a1942; padding: 1.5rem; max-width: 960px; margin: 0 auto; min-height: 100vh; }
+    h1 { margin-bottom: .5rem; color: #e91e63; font-size: 2rem; letter-spacing: 1px; }
+    .meta { color: #ad1457; font-size: .9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+    button { background: linear-gradient(135deg, #ec407a, #e91e63); color: #fff; border: none; padding: .5rem 1.2rem; border-radius: 14px; cursor: pointer; font-weight: 700; font-family: inherit; font-size: .95rem; transition: transform 0.1s; }
+    button:hover { transform: scale(1.04); background: linear-gradient(135deg, #f06292, #ec407a); }
+    .card { background: #fff; border-radius: 14px; padding: .85rem 1rem; margin-bottom: .6rem; display: flex; gap: .75rem; align-items: flex-start; box-shadow: 0 2px 8px rgba(233, 30, 99, 0.08); border: 1px solid #f8bbd0; transition: transform 0.1s; }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(233, 30, 99, 0.13); }
+    .badge { font-size: .7rem; font-weight: 700; padding: .2rem .5rem; border-radius: 8px; white-space: nowrap; flex-shrink: 0; margin-top: .15rem; }
+    .badge.reddit { background: #ff6f61; color: #fff; }
+    .badge.reddit_comment { background: #f48fb1; color: #fff; }
+    .badge.x { background: #ce93d8; color: #fff; }
     .card-body { min-width: 0; }
-    .card a { color: #38bdf8; text-decoration: none; }
-    .card a:hover { text-decoration: underline; }
-    .card .info { color: #94a3b8; font-size: .8rem; margin-top: .25rem; }
-    .empty { color: #64748b; font-style: italic; }
-    #status { color: #94a3b8; font-size: .85rem; margin-left: .75rem; }
+    .card a { color: #c2185b; text-decoration: none; font-weight: 500; }
+    .card a:hover { text-decoration: underline; color: #e91e63; }
+    .card .info { color: #ad1457; font-size: .8rem; margin-top: .3rem; opacity: 0.7; }
+    .empty { color: #e91e63; font-style: italic; opacity: 0.6; }
+    #status { color: #ad1457; font-size: .85rem; margin-left: .75rem; }
   </style>
 </head>
 <body>
-  <h1>Puerto Vallarta News</h1>
-  <p class="meta">Aggregating from Reddit & X &mdash; polls every ${POLL_INTERVAL_MINUTES} min</p>
+  <h1>Puerto Vallarta News ~ #saveourbabes</h1>
+  <p class="meta">scooping the latest from Reddit & X every ${POLL_INTERVAL_MINUTES} min</p>
   <button onclick="refresh()">Refresh Now</button><span id="status"></span>
-  <a href="/logout" style="float:right;color:#94a3b8;font-size:.85rem;margin-top:.3rem;display:inline-block">Logout</a>
+  <a href="/logout" style="float:right;color:#ad1457;font-size:.85rem;margin-top:.3rem;display:inline-block;opacity:0.6">logout</a>
+
+  <iframe id="bgmusic" width="0" height="0" style="position:absolute;top:-9999px" src="https://www.youtube.com/embed/8HBcV0MtAQg?autoplay=1&loop=1&playlist=8HBcV0MtAQg" allow="autoplay" frameborder="0"></iframe>
 
   <div id="feed" style="margin-top:1.5rem"><p class="empty">Loading...</p></div>
 
