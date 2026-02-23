@@ -1,6 +1,7 @@
 import "dotenv/config";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { execSync } from "node:child_process";
 import express from "express";
 import cron from "node-cron";
 import Database from "better-sqlite3";
@@ -112,23 +113,27 @@ const REDDIT_PRIMARY_SUB = "puertovallarta"; // direct polling (no search), also
 
 // ─── SQLite Setup ───────────────────────────────────────────────────────────
 
-const GCS_DB_PATH = process.env.DB_PATH;
-const LOCAL_DB_PATH = GCS_DB_PATH ? "/tmp/pv-news.db" : "pv-news.db";
+const GCS_BUCKET = process.env.GCS_BUCKET; // e.g. gs://pv-news-data/pv-news.db
+const LOCAL_DB_PATH = GCS_BUCKET ? "/tmp/pv-news.db" : "pv-news.db";
 
-// Copy from GCS mount to local disk on startup
-if (GCS_DB_PATH && fs.existsSync(GCS_DB_PATH)) {
-  fs.copyFileSync(GCS_DB_PATH, LOCAL_DB_PATH);
-  console.log(`[db] copied ${GCS_DB_PATH} to ${LOCAL_DB_PATH}`);
+// Pull DB from GCS on startup
+if (GCS_BUCKET) {
+  try {
+    execSync(`gcloud storage cp ${GCS_BUCKET} ${LOCAL_DB_PATH}`, { stdio: "pipe" });
+    console.log(`[db] pulled from ${GCS_BUCKET}`);
+  } catch (err) {
+    console.log(`[db] no remote DB found, starting fresh`);
+  }
 }
 
 const db = new Database(LOCAL_DB_PATH);
 db.pragma("journal_mode = WAL");
 
 function syncToGCS() {
-  if (!GCS_DB_PATH) return;
+  if (!GCS_BUCKET) return;
   try {
     db.pragma("wal_checkpoint(TRUNCATE)");
-    fs.copyFileSync(LOCAL_DB_PATH, GCS_DB_PATH);
+    execSync(`gcloud storage cp ${LOCAL_DB_PATH} ${GCS_BUCKET}`, { stdio: "pipe" });
     console.log("[db] synced to GCS");
   } catch (err) {
     console.error("[db] sync error:", err.message);
