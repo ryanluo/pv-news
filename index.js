@@ -377,8 +377,6 @@ app.get("/", (_req, res) => {
   <button onclick="refresh()">Refresh Now</button><span id="status"></span>
   <a href="/logout" style="float:right;color:#ad1457;font-size:.85rem;margin-top:.3rem;display:inline-block;opacity:0.6">logout</a>
 
-  <iframe id="bgmusic" width="0" height="0" style="position:absolute;top:-9999px" src="https://www.youtube.com/embed/8HBcV0MtAQg?autoplay=1&loop=1&playlist=8HBcV0MtAQg" allow="autoplay" frameborder="0"></iframe>
-
   <div id="feed" style="margin-top:1.5rem"><p class="empty">Loading...</p></div>
 
   <script>
