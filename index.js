@@ -159,8 +159,8 @@ const insertPost = db.prepare(`
   VALUES (@id, @source, @title, @body, @url, @author, @score, @subreddit, @permalink, @metrics, @created_at)
 `);
 
-const selectBySource = db.prepare(`SELECT * FROM posts WHERE source = ? ORDER BY created_at DESC LIMIT 200`);
-const selectAll = db.prepare(`SELECT * FROM posts ORDER BY created_at DESC LIMIT 400`);
+const selectBySource = db.prepare(`SELECT * FROM posts WHERE source = ? ORDER BY created_at DESC LIMIT 300`);
+const selectAll = db.prepare(`SELECT * FROM posts ORDER BY created_at DESC LIMIT 300`);
 const countBySource = db.prepare(`SELECT source, COUNT(*) as count FROM posts GROUP BY source`);
 
 // ─── Reddit Poller ──────────────────────────────────────────────────────────
