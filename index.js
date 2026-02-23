@@ -175,7 +175,10 @@ async function pollReddit() {
   try {
     const url = `https://www.reddit.com/r/${REDDIT_PRIMARY_SUB}/new.json?limit=25`;
     const res = await redditFetch(url, { headers: fetchHeaders });
-    if (res.ok) {
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/new returned ${res.status}`, { server: res.headers.get("server"), via: res.headers.get("via"), body: body.slice(0, 500) });
+    } else {
       const data = await res.json();
       for (const child of data?.data?.children ?? []) {
         const d = child.data;
@@ -206,7 +209,8 @@ async function pollReddit() {
     try {
       const res = await redditFetch(url, { headers: fetchHeaders });
       if (!res.ok) {
-        console.error(`[reddit] r/${subreddit} returned ${res.status}`);
+        const body = await res.text().catch(() => "");
+        console.error(`[reddit] r/${subreddit} returned ${res.status}`, { server: res.headers.get("server"), via: res.headers.get("via"), body: body.slice(0, 500) });
         continue;
       }
       const data = await res.json();
@@ -248,7 +252,8 @@ async function pollSubredditComments() {
       headers: { "User-Agent": "pv-news-aggregator/1.0" },
     });
     if (!res.ok) {
-      console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/comments returned ${res.status}`);
+      const body = await res.text().catch(() => "");
+      console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/comments returned ${res.status}`, { server: res.headers.get("server"), via: res.headers.get("via"), body: body.slice(0, 500) });
       return;
     }
     const data = await res.json();
