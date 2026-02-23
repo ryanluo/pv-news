@@ -351,8 +351,18 @@ app.get("/api/x", (_req, res) => {
   res.json({ count: posts.length, posts });
 });
 
-app.get("/api/all", (_req, res) => {
-  const posts = selectAll.all().map(formatPost);
+app.get("/api/all", (req, res) => {
+  const q = req.query.q?.trim();
+  const limit = Math.min(parseInt(req.query.limit || "50", 10), 300);
+  const offset = parseInt(req.query.offset || "0", 10);
+  let posts;
+  if (q) {
+    posts = db.prepare(`SELECT * FROM posts WHERE title LIKE ? OR body LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+      .all(`%${q}%`, `%${q}%`, limit, offset).map(formatPost);
+  } else {
+    posts = db.prepare(`SELECT * FROM posts ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+      .all(limit, offset).map(formatPost);
+  }
   res.json({ count: posts.length, posts });
 });
 
@@ -391,20 +401,59 @@ app.get("/", (_req, res) => {
     .card .info { color: #ad1457; font-size: .8rem; margin-top: .3rem; opacity: 0.7; }
     .empty { color: #e91e63; font-style: italic; opacity: 0.6; }
     #status { color: #ad1457; font-size: .85rem; margin-left: .75rem; }
+    #search { padding: .45rem .75rem; border: 2px solid #f8bbd0; border-radius: 12px; background: #fff; color: #4a1942; font-size: .9rem; font-family: inherit; width: 220px; margin-left: .75rem; }
+    #search:focus { outline: none; border-color: #e91e63; box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.15); }
+    .filters { display: inline-flex; gap: .4rem; margin-left: .75rem; vertical-align: middle; }
+    .filters label { font-size: .85rem; font-weight: 600; cursor: pointer; padding: .3rem .7rem; border-radius: 10px; border: 2px solid #f8bbd0; background: #fff; color: #ad1457; user-select: none; transition: all 0.1s; }
+    .filters input { display: none; }
+    .filters input:checked + span { background: #e91e63; color: #fff; }
+    .filters label span { padding: .3rem .7rem; border-radius: 10px; display: inline-block; margin: -.3rem -.7rem; }
   </style>
 </head>
 <body>
   <h1>Puerto Vallarta News ~ #saveourbabes</h1>
   <p class="meta">scooping the latest from Reddit & X every ${POLL_INTERVAL_MINUTES} min</p>
-  <button onclick="refresh()">Refresh Now</button><span id="status"></span>
+  <button onclick="refresh()">Refresh Now</button><input id="search" type="text" placeholder="search posts..." oninput="debouncedSearch()" onkeydown="if(event.key==='Enter'){clearTimeout(searchTimer);load()}"><span class="filters"><label><input type="checkbox" id="f-reddit" checked onchange="renderFiltered()"><span>Reddit</span></label><label><input type="checkbox" id="f-x" checked onchange="renderFiltered()"><span>X</span></label></span><span id="status"></span>
   <a href="/logout" style="float:right;color:#ad1457;font-size:.85rem;margin-top:.3rem;display:inline-block;opacity:0.6">logout</a>
 
   <div id="feed" style="margin-top:1.5rem"><p class="empty">Loading...</p></div>
 
   <script>
-    async function load() {
-      const { posts } = await fetch("/api/all").then(r => r.json());
-      renderFeed(posts);
+    let searchTimer;
+    let allPosts = [];
+    let loading = false;
+    let noMore = false;
+    const PAGE_SIZE = 50;
+
+    function debouncedSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => load(true), 300);
+    }
+
+    async function load(reset) {
+      if (loading) return;
+      if (!reset && noMore) return;
+      loading = true;
+      if (reset) { allPosts = []; noMore = false; }
+      const q = document.getElementById("search").value.trim();
+      let url = "/api/all?limit=" + PAGE_SIZE + "&offset=" + allPosts.length;
+      if (q) url += "&q=" + encodeURIComponent(q);
+      const { posts } = await fetch(url).then(r => r.json());
+      if (posts.length < PAGE_SIZE) noMore = true;
+      allPosts = allPosts.concat(posts);
+      renderFiltered();
+      loading = false;
+    }
+
+    function renderFiltered() {
+      const showReddit = document.getElementById("f-reddit").checked;
+      const showX = document.getElementById("f-x").checked;
+      const filtered = allPosts.filter(p => {
+        if ((p.source === "reddit" || p.source === "reddit_comment") && !showReddit) return false;
+        if (p.source === "x" && !showX) return false;
+        return true;
+      });
+      renderFeed(filtered);
     }
 
     function renderFeed(posts) {
@@ -460,12 +509,16 @@ app.get("/", (_req, res) => {
       const st = document.getElementById("status");
       st.textContent = "refreshing...";
       await fetch("/api/refresh", { method: "POST" });
-      await load();
+      await load(true);
       st.textContent = "done!";
       setTimeout(() => st.textContent = "", 2000);
     }
 
-    load();
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) load(false);
+    });
+
+    load(true);
   </script>
 </body>
 </html>`);
