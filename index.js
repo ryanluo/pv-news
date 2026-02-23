@@ -1,5 +1,5 @@
 import "dotenv/config";
-import crypto from "node:crypto";
+
 import fs from "node:fs";
 import { execSync } from "node:child_process";
 import express from "express";
@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: false }));
 
 const PORT = process.env.PORT || 3001;
 const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
-const AUTH_PASSWORD = process.env.AUTH_PASSWORD || "pvnews";
+
 
 // Proxy for Reddit requests (Bright Data residential proxy)
 const PROXY_URL = process.env.PROXY_URL;
@@ -30,83 +30,7 @@ function redditFetch(url, opts = {}) {
   });
 }
 
-// ─── Session Auth ───────────────────────────────────────────────────────────
-
-/** @type {Set<string>} */
-const sessions = new Set();
-
-function parseCookies(header) {
-  const cookies = {};
-  if (!header) return cookies;
-  for (const pair of header.split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = v.join("=").trim();
-  }
-  return cookies;
-}
-
-function requireAuth(req, res, next) {
-  const token = parseCookies(req.headers.cookie).session;
-  if (token && sessions.has(token)) return next();
-  if (req.path.startsWith("/api/")) return res.status(401).json({ error: "unauthorized" });
-  res.redirect("/login");
-}
-
-app.get("/login", (_req, res) => {
-  res.type("html").send(/* html */ `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PV News - Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Baloo 2', system-ui, sans-serif; background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%); color: #4a1942; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    form { background: #fff0f5; padding: 2rem; border-radius: 20px; width: 340px; box-shadow: 0 8px 30px rgba(233, 30, 99, 0.15); border: 2px solid #f8bbd0; }
-    h1 { color: #e91e63; margin-bottom: 1.5rem; font-size: 1.5rem; text-align: center; letter-spacing: 1px; }
-    label { display: block; font-size: .9rem; color: #ad1457; margin-bottom: .25rem; font-weight: 500; }
-    input { width: 100%; padding: .6rem; border: 2px solid #f8bbd0; border-radius: 12px; background: #fff; color: #4a1942; font-size: 1rem; margin-bottom: 1rem; font-family: inherit; }
-    input:focus { outline: none; border-color: #e91e63; box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.15); }
-    button { width: 100%; background: linear-gradient(135deg, #ec407a, #e91e63); color: #fff; border: none; padding: .7rem; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 1rem; font-family: inherit; transition: transform 0.1s; }
-    button:hover { transform: scale(1.03); background: linear-gradient(135deg, #f06292, #ec407a); }
-    .error { color: #c62828; font-size: .85rem; text-align: center; margin-bottom: 1rem; }
-  </style>
-</head>
-<body>
-  <form method="POST" action="/login">
-    <h1>PV News ~</h1>
-    ${`<p class="error" id="err"></p>`}
-    <label for="password">Password</label>
-    <input type="password" name="password" id="password" autofocus required>
-    <button type="submit">Log in</button>
-  </form>
-  <script>
-    if (location.search.includes("error=1")) document.getElementById("err").textContent = "Wrong password.";
-  </script>
-</body>
-</html>`);
-});
-
-app.post("/login", (req, res) => {
-  if (req.body.password !== AUTH_PASSWORD) {
-    return res.redirect("/login?error=1");
-  }
-  const token = crypto.randomBytes(32).toString("hex");
-  sessions.add(token);
-  res.setHeader("Set-Cookie", `session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=604800`);
-  res.redirect("/");
-});
-
-app.get("/logout", (req, res) => {
-  const token = parseCookies(req.headers.cookie).session;
-  if (token) sessions.delete(token);
-  res.setHeader("Set-Cookie", "session=; HttpOnly; Path=/; Max-Age=0");
-  res.redirect("/login");
-});
-
-// All routes below require auth
-app.use(requireAuth);
+// No auth — public access
 const POLL_INTERVAL_MINUTES = parseInt(process.env.POLL_INTERVAL_MINUTES || "15", 10);
 const REDDIT_SUBREDDITS = (process.env.REDDIT_SUBREDDITS || "puertovallarta,mexico,travel").split(",");
 const REDDIT_PRIMARY_SUB = "puertovallarta"; // direct polling (no search), also poll all comments
@@ -436,7 +360,6 @@ app.get("/", (_req, res) => {
   <h1>Puerto Vallarta News ~ #saveourbabes</h1>
   <p class="meta">scooping the latest from Reddit & X every ${POLL_INTERVAL_MINUTES} min</p>
   <button onclick="refresh()">Refresh Now</button><input id="search" type="text" placeholder="search posts..." oninput="debouncedSearch()" onkeydown="if(event.key==='Enter'){clearTimeout(searchTimer);load()}"><span class="filters"><label><input type="checkbox" id="f-reddit" checked onchange="renderFiltered()"><span>Reddit</span></label><label><input type="checkbox" id="f-x" checked onchange="renderFiltered()"><span>X</span></label></span><span id="status"></span>
-  <a href="/logout" style="float:right;color:#ad1457;font-size:.85rem;margin-top:.3rem;display:inline-block;opacity:0.6">logout</a>
 
   <div id="feed" style="margin-top:1.5rem"><p class="empty">Loading...</p></div>
 
