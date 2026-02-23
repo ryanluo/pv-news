@@ -1,5 +1,6 @@
 import "dotenv/config";
 import crypto from "node:crypto";
+import fs from "node:fs";
 import express from "express";
 import cron from "node-cron";
 import Database from "better-sqlite3";
@@ -111,8 +112,28 @@ const REDDIT_PRIMARY_SUB = "puertovallarta"; // direct polling (no search), also
 
 // ─── SQLite Setup ───────────────────────────────────────────────────────────
 
-const db = new Database(process.env.DB_PATH || "pv-news.db");
-db.pragma("journal_mode = DELETE");
+const GCS_DB_PATH = process.env.DB_PATH;
+const LOCAL_DB_PATH = GCS_DB_PATH ? "/tmp/pv-news.db" : "pv-news.db";
+
+// Copy from GCS mount to local disk on startup
+if (GCS_DB_PATH && fs.existsSync(GCS_DB_PATH)) {
+  fs.copyFileSync(GCS_DB_PATH, LOCAL_DB_PATH);
+  console.log(`[db] copied ${GCS_DB_PATH} to ${LOCAL_DB_PATH}`);
+}
+
+const db = new Database(LOCAL_DB_PATH);
+db.pragma("journal_mode = WAL");
+
+function syncToGCS() {
+  if (!GCS_DB_PATH) return;
+  try {
+    db.pragma("wal_checkpoint(TRUNCATE)");
+    fs.copyFileSync(LOCAL_DB_PATH, GCS_DB_PATH);
+    console.log("[db] synced to GCS");
+  } catch (err) {
+    console.error("[db] sync error:", err.message);
+  }
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
@@ -307,6 +328,7 @@ async function pollX() {
 
 async function pollAll() {
   await Promise.allSettled([pollReddit(), pollX()]);
+  syncToGCS();
 }
 
 // ─── Express Routes ─────────────────────────────────────────────────────────
@@ -451,8 +473,15 @@ app.get("/", (_req, res) => {
 
 // ─── Start ──────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`PV News running at http://localhost:${PORT}`);
   pollAll();
   cron.schedule(`*/${POLL_INTERVAL_MINUTES} * * * *`, pollAll);
+});
+
+process.on("SIGTERM", () => {
+  console.log("[shutdown] syncing DB to GCS...");
+  syncToGCS();
+  db.close();
+  server.close(() => process.exit(0));
 });
