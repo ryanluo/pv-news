@@ -132,6 +132,18 @@ db.pragma("journal_mode = WAL");
 function syncToGCS() {
   if (!GCS_BUCKET) return;
   try {
+    // Pull remote DB and merge in any rows we don't have
+    const remoteDB = LOCAL_DB_PATH + ".remote";
+    try {
+      execSync(`gcloud storage cp ${GCS_BUCKET} ${remoteDB}`, { stdio: "pipe" });
+      db.exec(`ATTACH DATABASE '${remoteDB}' AS remote`);
+      db.exec(`INSERT OR IGNORE INTO posts SELECT * FROM remote.posts`);
+      db.exec(`DETACH DATABASE remote`);
+      fs.unlinkSync(remoteDB);
+      console.log("[db] merged remote data");
+    } catch (err) {
+      // No remote DB yet or merge failed — that's fine, just push ours
+    }
     db.pragma("wal_checkpoint(TRUNCATE)");
     execSync(`gcloud storage cp ${LOCAL_DB_PATH} ${GCS_BUCKET}`, { stdio: "pipe" });
     console.log("[db] synced to GCS");
