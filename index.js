@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import express from "express";
 import cron from "node-cron";
 import Database from "better-sqlite3";
+import { ProxyAgent } from "undici";
 
 const app = express();
 app.use(express.json());
@@ -11,6 +12,21 @@ app.use(express.urlencoded({ extended: false }));
 const PORT = process.env.PORT || 3001;
 const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || "pvnews";
+
+// Proxy for Reddit requests (Bright Data residential proxy)
+const PROXY_URL = process.env.PROXY_URL;
+const proxyDispatcher = PROXY_URL
+  ? new ProxyAgent({ uri: PROXY_URL, requestTls: { rejectUnauthorized: false } })
+  : undefined;
+if (PROXY_URL) console.log(`[proxy] using proxy: ${PROXY_URL.replace(/:[^:@]+@/, ':***@')}`);
+
+function redditFetch(url, opts = {}) {
+  if (proxyDispatcher) opts.dispatcher = proxyDispatcher;
+  return fetch(url, opts).catch((err) => {
+    console.error(`[proxy] fetch failed for ${url}: ${err.message}`, err.cause ?? "");
+    throw err;
+  });
+}
 
 // ─── Session Auth ───────────────────────────────────────────────────────────
 
@@ -132,15 +148,13 @@ async function pollReddit() {
   console.log("[reddit] polling...");
   let inserted = 0;
 
-  const fetchHeaders = { "User-Agent": "web:pv-news:1.0 (by /u/pvnewsbot)" };
+  const fetchHeaders = { "User-Agent": "pv-news-aggregator/1.0" };
 
   // 1. Primary subreddit: fetch /new directly (no search lag)
   try {
-    const url = `https://old.reddit.com/r/${REDDIT_PRIMARY_SUB}/new.json?limit=25`;
-    const res = await fetch(url, { headers: fetchHeaders });
-    if (!res.ok) {
-      console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/new returned ${res.status}`);
-    } else {
+    const url = `https://www.reddit.com/r/${REDDIT_PRIMARY_SUB}/new.json?limit=25`;
+    const res = await redditFetch(url, { headers: fetchHeaders });
+    if (res.ok) {
       const data = await res.json();
       for (const child of data?.data?.children ?? []) {
         const d = child.data;
@@ -167,9 +181,9 @@ async function pollReddit() {
   // 2. Other subreddits: search for "puerto vallarta"
   const searchSubs = REDDIT_SUBREDDITS.filter((s) => s !== REDDIT_PRIMARY_SUB);
   for (const subreddit of searchSubs) {
-    const url = `https://old.reddit.com/r/${subreddit}/search.json?q=puerto+vallarta&sort=new&restrict_sr=on&limit=25`;
+    const url = `https://www.reddit.com/r/${subreddit}/search.json?q=puerto+vallarta&sort=new&restrict_sr=on&limit=25`;
     try {
-      const res = await fetch(url, { headers: fetchHeaders });
+      const res = await redditFetch(url, { headers: fetchHeaders });
       if (!res.ok) {
         console.error(`[reddit] r/${subreddit} returned ${res.status}`);
         continue;
@@ -205,12 +219,12 @@ async function pollReddit() {
 
 async function pollSubredditComments() {
   // r/subreddit/comments.json returns the latest comments across ALL posts in the sub
-  const url = `https://old.reddit.com/r/${REDDIT_PRIMARY_SUB}/comments.json?limit=100`;
+  const url = `https://www.reddit.com/r/${REDDIT_PRIMARY_SUB}/comments.json?limit=100`;
   let inserted = 0;
 
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "web:pv-news:1.0 (by /u/pvnewsbot)" },
+    const res = await redditFetch(url, {
+      headers: { "User-Agent": "pv-news-aggregator/1.0" },
     });
     if (!res.ok) {
       console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/comments returned ${res.status}`);
