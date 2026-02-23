@@ -132,7 +132,7 @@ async function pollReddit() {
   console.log("[reddit] polling...");
   let inserted = 0;
 
-  const fetchHeaders = { "User-Agent": "pv-news-aggregator/1.0" };
+  const fetchHeaders = { "User-Agent": "web:pv-news:1.0 (by /u/pvnewsbot)" };
 
   // 1. Primary subreddit: fetch /new directly (no search lag)
   try {
@@ -208,7 +208,7 @@ async function pollSubredditComments() {
 
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "pv-news-aggregator/1.0" },
+      headers: { "User-Agent": "web:pv-news:1.0 (by /u/pvnewsbot)" },
     });
     if (!res.ok) {
       console.error(`[reddit] r/${REDDIT_PRIMARY_SUB}/comments returned ${res.status}`);
